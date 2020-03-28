@@ -10,10 +10,10 @@ SCORES_DB = "CMPUT-291-Project-2/scores.db"
 SCORES_TXT = "CMPUT-291-Project-2/scores-sorted.txt"
 
 
-def create_database(dbPath, txtPath):
+def create_database(dbPath, txtPath, model):
     database = db.DB()
     reviews_tfile = open(txtPath, 'r')
-    database.open(dbPath, None, db.DB_HASH, db.DB_CREATE)
+    database.open(dbPath, None, model, db.DB_CREATE)
     cursor = database.cursor()
     review_line = reviews_tfile.readline()
     while review_line:
@@ -26,7 +26,7 @@ def create_database(dbPath, txtPath):
 
 
 if __name__ == "__main__":
-    create_database(REVIEWS_DB, REVIEWS_TXT)
-    create_database(PTERMS_DB, PTERMS_TXT)
-    create_database(SCORES_DB, SCORES_TXT)
-    create_database(RTERMS_DB, RTERMS_TXT)
+    create_database(REVIEWS_DB, REVIEWS_TXT, db.DB_HASH)
+    create_database(PTERMS_DB, PTERMS_TXT, db.DB_BTREE)
+    create_database(SCORES_DB, SCORES_TXT, db.DB_BTREE)
+    create_database(RTERMS_DB, RTERMS_TXT, db.DB_BTREE)

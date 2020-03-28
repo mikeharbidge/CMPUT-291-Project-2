@@ -1,0 +1,10 @@
+pterm:guitar
+rterm:great
+guitar
+sound%
+rterm:great sound%
+score > 4
+guitar  score < 3
+price < 200 guitar 
+guitar date > 2007/05/16
+guitar date > 2007/05/16  price > 200 price < 300
