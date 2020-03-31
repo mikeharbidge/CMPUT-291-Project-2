@@ -1,5 +1,6 @@
 import re
 from datetime import date
+from bsddb3 import db
 
 COMPARISON_SYMBOLS = {'>', '>=', '<', '<=', '='}
 KEYWORDS = ['pterm', 'rterm', 'price', 'date', 'score']
@@ -36,7 +37,7 @@ def evaluate_query(query):
     query = re.sub('>\s*=', ' >= ', query)
     query = re.sub('<\s*=', ' <= ', query)
     query = re.sub('\s+', ' ', query)
-    query = query.lower().strip()
+    query = query.strip()
     tokenized_query = query.split(' ')
     iterate_query(tokenized_query, query_dict)
     iterate_query(tokenized_query, query_dict)
@@ -66,7 +67,23 @@ a tuple (operator, value). E.g. for this query: guitar date > 2007/05/16  price 
 
 
 def results(tokenized_query, full_output):
-    pass
+    #print(tokenized_query)
+    database = db.DB() #handle for Berkeley DB database
+    DB_File = "rw.idx"
+    database.open(DB_File ,None, db.DB_HASH, db.DB_CREATE)
+    curs = database.cursor();
+    iter = curs.first()
+    while iter:
+        result = database.get(iter[0])
+        hi = result.find(tokenized_query['pterm'][1].encode("utf-8"))
+        if full_output and hi > 0:
+            show_extended_results(result)
+        elif hi > 0:
+            show_brief_results(result)
+        iter = curs.next()
+    #print(tokenized_query)
+    curs.close()
+    database.close()
 
 
 """
@@ -76,7 +93,18 @@ Prints the summerized version of a result entry (the review id, the product titl
 
 
 def show_brief_results(result):
-    pass
+    result = result.decode("utf-8")
+    pos = result.find(',')
+    print(result[0:pos])
+    pos2 = result.find('"',pos+1)
+    pos = result.find('"', pos2+1)
+    print(result[pos2:pos+1])
+    pos2 = result.find(',',pos+2)
+    pos = result.find(',',pos2+1)
+    pos2 = result.find(',',pos+1)
+    pos = result.find(',',pos2+1)
+    print(result[pos2+1:pos])
+    print()
 
 
 """
@@ -85,15 +113,27 @@ Prints a result entry with additional details (all review fields)
 """
 
 
-def show_etxended_results(result):
-    pass
-
+def show_extended_results(result):
+    quotes = 0
+    result = result.decode("utf-8")
+    i=0
+    while i < len(result)-1:
+        if result[i] == '"':
+            quotes = quotes + 1
+        if result[i] != ',':
+            print(result[i], end = '')
+        elif result[i] == ',' and quotes % 2 == 0:
+            print()
+        i = i + 1
+    print()
+    print()
 
 if __name__ == "__main__":
     running = True
+    full = False
     while (running):
-        full = False
         command = input("q to quit\n")
+        #print(command)
         if re.compile('output\s*=\s*full').match(command.lower().strip()):
             full = True
         elif re.compile('output\s*=\s*brief').match(command.lower().strip()):
@@ -102,5 +142,5 @@ if __name__ == "__main__":
             running = False
         else:
             tokenized_query = evaluate_query(command)
-            # print(tokenized_query)
+#            print(tokenized_query)
             results(tokenized_query, full)
