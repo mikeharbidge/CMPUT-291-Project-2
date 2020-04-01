@@ -71,32 +71,32 @@ def results(tokenized_query, full_output):
     rw = db.DB() #handle for Berkeley DB database
     DB_File = "rw.idx"
     rw.open(DB_File ,None, db.DB_HASH, db.DB_CREATE)
-    rw_curs = rw.cursor();
+    rw_curs = rw.cursor()
 
     #scores database open
     sc = db.DB() #handle for Berkeley DB database
     DB_File = "sc.idx"
     sc.open(DB_File ,None, db.DB_BTREE, db.DB_CREATE)
-    sc_curs = sc.cursor();
+    sc_curs = sc.cursor()
 
     #pterms database open
     pt = db.DB() #handle for Berkeley DB database
     DB_File = "pt.idx"
     pt.open(DB_File ,None, db.DB_BTREE, db.DB_CREATE)
-    pt_curs = pt.cursor();
+    pt_curs = pt.cursor()
 
     #rterms databse open
     rt = db.DB() #handle for Berkeley DB database
     DB_File = "rt.idx"
     rt.open(DB_File ,None, db.DB_BTREE, db.DB_CREATE)
-    rt_curs = rt.cursor();
+    rt_curs = rt.cursor()
     #end of open
     
     #rterm filtering here
     #---------------------------------------------
     i = 1
     rt_iter = rt_curs.first()
-    if tokenized_query['pterm']:
+    if tokenized_query['rterm']:    #typo? i changed from pterm to rterm
         while rt_iter:
             result = rt.get(rt_iter[0])
             while i < len(tokenized_query['rterm']):
@@ -106,9 +106,21 @@ def results(tokenized_query, full_output):
                 i = i + 2
             rt_iter = rt_curs.next()
 
-    #pterm filtering here
+    #pterm filtering here, modified from 
     #---------------------------------------------
-
+    rt_iter = rt_curs.first()
+    if tokenized_query['pterm']:
+        while rt_iter:
+            i = 1
+            result = rt.get(rt_iter[0])
+            result = result.decode("utf-8")
+            print(result)   #testing
+            while i < len(tokenized_query['pterm']):
+                print(tokenized_query['pterm'][i])
+                if result == tokenized_query['pterm'][i]: #prints if rterm is in data
+                    print("Result Found: "+result)
+                i = i + 1
+            rt_iter = rt_curs.next()
     
     #scores filtering here
     #---------------------------------------------
