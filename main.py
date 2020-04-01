@@ -114,7 +114,7 @@ def results(tokenized_query, full_output):
             i = 1
             result = rt.get(rt_iter[0])
             result = result.decode("utf-8")
-            print(result)   #testing
+            #print(result)   #testing
             while i < len(tokenized_query['pterm']):
                 print(tokenized_query['pterm'][i])
                 if result == tokenized_query['pterm'][i]: #prints if rterm is in data
