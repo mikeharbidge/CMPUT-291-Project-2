@@ -37,7 +37,7 @@ def evaluate_query(query):
     query = re.sub('>\s*=', ' >= ', query)
     query = re.sub('<\s*=', ' <= ', query)
     query = re.sub('\s+', ' ', query)
-    query = query.strip()
+    query = query.lower().strip()
     tokenized_query = query.split(' ')
     iterate_query(tokenized_query, query_dict)
     iterate_query(tokenized_query, query_dict)
@@ -67,23 +67,83 @@ a tuple (operator, value). E.g. for this query: guitar date > 2007/05/16  price 
 
 
 def results(tokenized_query, full_output):
-    #print(tokenized_query)
-    database = db.DB() #handle for Berkeley DB database
+    #reviews batabase open
+    rw = db.DB() #handle for Berkeley DB database
     DB_File = "rw.idx"
-    database.open(DB_File ,None, db.DB_HASH, db.DB_CREATE)
-    curs = database.cursor();
-    iter = curs.first()
+    rw.open(DB_File ,None, db.DB_HASH, db.DB_CREATE)
+    rw_curs = rw.cursor();
+
+    #scores database open
+    sc = db.DB() #handle for Berkeley DB database
+    DB_File = "sc.idx"
+    sc.open(DB_File ,None, db.DB_BTREE, db.DB_CREATE)
+    sc_curs = sc.cursor();
+
+    #pterms database open
+    pt = db.DB() #handle for Berkeley DB database
+    DB_File = "pt.idx"
+    pt.open(DB_File ,None, db.DB_BTREE, db.DB_CREATE)
+    pt_curs = pt.cursor();
+
+    #rterms databse open
+    rt = db.DB() #handle for Berkeley DB database
+    DB_File = "rt.idx"
+    rt.open(DB_File ,None, db.DB_BTREE, db.DB_CREATE)
+    rt_curs = rt.cursor();
+    #end of open
+    
+    #rterm filtering here
+    #---------------------------------------------
+    i = 1
+    rt_iter = rt_curs.first()
+    if tokenized_query['pterm']:
+        while rt_iter:
+            result = rt.get(rt_iter[0])
+            while i < len(tokenized_query['rterm']):
+                if result.find(tokenized_query['rterm'][i].encode("utf-8")): #prints if rterm is in data
+                    print(result)
+                i = i + 2
+            rt_iter = rt_curs.next()
+    
+
+    #pterm filtering here
+    #---------------------------------------------
+
+    
+    #scores filtering here
+    #---------------------------------------------
+
+    
+    #date filtering here
+    #---------------------------------------------
+
+    
+
+    #print out filtered results
+    #---------------------------------------------
+    """
+    iter = rw_curs.first()
     while iter:
-        result = database.get(iter[0])
+        result = rw.get(iter[0])
         hi = result.find(tokenized_query['pterm'][1].encode("utf-8"))
         if full_output and hi > 0:
             show_extended_results(result)
         elif hi > 0:
             show_brief_results(result)
-        iter = curs.next()
+        iter = rw_curs.next()
     #print(tokenized_query)
-    curs.close()
-    database.close()
+"""
+    #closing databases
+    #---------------------------------------------
+    rw_curs.close()
+    rw.close()
+    rt_curs.close()
+    rt.close()
+    pt_curs.close()
+    pt.close()
+    sc_curs.close()
+    sc.close()
+        
 
 
 """
@@ -142,5 +202,5 @@ if __name__ == "__main__":
             running = False
         else:
             tokenized_query = evaluate_query(command)
-#            print(tokenized_query)
+            print(tokenized_query)
             results(tokenized_query, full)
