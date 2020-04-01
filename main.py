@@ -111,13 +111,12 @@ def results(tokenized_query, full_output):
     rt_iter = rt_curs.first()
     if tokenized_query['pterm']:
         while rt_iter:
-            i = 1
+            i = 0       #this needs to be 0 or the while loop will never call
             result = rt.get(rt_iter[0])
-            result = result.decode("utf-8")
-            #print(result)   #testing
-            while i < len(tokenized_query['pterm']):
-                print(tokenized_query['pterm'][i])
-                if result == tokenized_query['pterm'][i]: #prints if rterm is in data
+            result = result.decode("utf-8")     #instead of encoding the token in the query the result just needs to be decoded
+            #print(result)   #debug
+            while i <= len(tokenized_query['pterm']):
+                if (str(tokenized_query['pterm'][0][i])) in result: #prints if rterm is in data, fixed
                     print("Result Found: "+result)
                 i = i + 1
             rt_iter = rt_curs.next()
