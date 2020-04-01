@@ -100,11 +100,11 @@ def results(tokenized_query, full_output):
         while rt_iter:
             result = rt.get(rt_iter[0])
             while i < len(tokenized_query['rterm']):
+                print(tokenized_query['rterm'][i])
                 if result.find(tokenized_query['rterm'][i].encode("utf-8")): #prints if rterm is in data
                     print(result)
                 i = i + 2
             rt_iter = rt_curs.next()
-    
 
     #pterm filtering here
     #---------------------------------------------
