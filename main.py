@@ -227,16 +227,16 @@ def results(tokenized_query, full_output):
         if rw_iter[0].decode('utf-8') in combined_set:
             if len(tokenized_query['date']) == 1:
                 operator1 = tokenized_query['date'][0][0]
-                operand1 = date.timestamp(tokenized_query['date'][0][1])
+                operand1 = time.mktime(tokenized_query['date'][0][1].timetuple())
                 if compare(float(result[7]), operand1, operator1):
-                    result_set.add([rw_iter[0].decode('utf-8'), result])
+                    result_set.append([rw_iter[0].decode('utf-8'), result])
             elif len(tokenized_query['date']) == 2:
                 operator1 = tokenized_query['date'][0][0]
                 operator2 = tokenized_query['date'][1][0]
-                operand1 = date.timesmap(tokenized_query['date'][0][1])
-                operand2 = date.timestamp(tokenized_query['date'][1][1])
+                operand1 = time.mktime(tokenized_query['date'][0][1].timetuple())
+                operand2 = time.mktime(tokenized_query['date'][1][1].timetuple())
                 if compare(float(result[7]), operand1, operator1) and compare(float(result[7]), operand2, operator2):
-                    result_set.add([rw_iter[0].decode('utf-8'), result])
+                    result_set.append([rw_iter[0].decode('utf-8'), result])
             else:
                 result_set.append([rw_iter[0].decode('utf-8'), result])
         rw_iter = rw_curs.next()
