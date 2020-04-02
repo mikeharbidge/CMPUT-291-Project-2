@@ -128,7 +128,7 @@ def results(tokenized_query, full_output):
                     rt_result_set.add(result)
             rt_iter = rt_curs.next()
 
-    ''' OLD way of rterm filtering that doesnt work
+    '''OLD way of rterm filtering that doesnt work
     i = 1
     rt_iter = rt_curs.first()
     if tokenized_query['rterm']:    #typo? i changed from pterm to rterm
@@ -222,8 +222,7 @@ def results(tokenized_query, full_output):
 
     #print out filtered results
     #---------------------------------------------
-    """
-    iter = rw_curs.first()
+    """iter = rw_curs.first()
     while iter:
         result = rw.get(iter[0])
         hi = result.find(tokenized_query['pterm'][1].encode("utf-8"))
