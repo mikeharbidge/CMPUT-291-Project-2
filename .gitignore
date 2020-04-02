@@ -10,3 +10,5 @@ rterms-final.txt
 pterms-final.txt
 scores-final.txt
 reviews-final.txt
+create_index.py
+.vscode
