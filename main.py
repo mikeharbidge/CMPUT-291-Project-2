@@ -93,21 +93,30 @@ def results(tokenized_query, full_output):
     #end of open
     
     #rterm filtering here
-    #---------------------------------------------
-    rt_iter = rt_curs.first()
+    #--------------------------------------------
     if tokenized_query['rterm']:
-        while rt_iter:
-            i = 0       #this needs to be 0 or the while loop will never call
-            result = rt.get(rt_iter[0])
-            result = result.decode("utf-8")     #instead of encoding the token in the query the result just needs to be decoded
-            #print(result)   #debug
-            while i <= len(tokenized_query['rterm']):
-                if (str(tokenized_query['rterm'][0][i])) in result: #prints if rterm is in data, fixed
-                    print("Result Found: "+result)
-                i = i + 1
-            rt_iter = rt_curs.next()
+        i = 1
+        while i < len(tokenized_query['rterm']):
+            rt_iter = rt_curs.set_range(tokenized_query['pterm'][i].encode("utf-8"))
+            #print(rt_iter)
+            if rt_iter != None:
+                while rt_iter:
+                    print("------------")
+                    print(rt_iter[0].decode("utf-8"))
+                    print(tokenized_query['rterm'][i])
+                    found = rt_iter[0].decode("utf-8").find(tokenized_query['rterm'][i])
+                    print(found)
+                    if found >= 0:
+                        result = rt.get(rt_iter[0])
+                        print(result)
+                    else:
+                        break
+                    rt_iter = rt_curs.next()
+            else:
+                print("FALSE")
+            i = i + 2
 
-    ''' OLD way of rterm filtering that doesnt work
+    '''OLD way of rterm filtering that doesnt work
     i = 1
     rt_iter = rt_curs.first()
     if tokenized_query['rterm']:    #typo? i changed from pterm to rterm
@@ -127,7 +136,7 @@ def results(tokenized_query, full_output):
         while rt_iter:
             i = 0       #this needs to be 0 or the while loop will never call
             result = rt.get(rt_iter[0])
-            result = result.decode("utf-8")     #instead of encoding the token in the query the result just needs to be decoded
+            result = result.decode("utf-8")#instead of encoding the token in the query the result just needs to be decoded
             #print(result)   #debug
             while i <= len(tokenized_query['pterm']):
                 if (str(tokenized_query['pterm'][0][i])) in result: #prints if rterm is in data, fixed
@@ -149,7 +158,6 @@ def results(tokenized_query, full_output):
                     print("Result Found: "+result)
                 i = i + 1
             rt_iter = rt_curs.next()
-    
     #date filtering here
     #---------------------------------------------
     rt_iter = rt_curs.first()
@@ -164,12 +172,10 @@ def results(tokenized_query, full_output):
                     print("Result Found: "+result)
                 i = i + 1
             rt_iter = rt_curs.next()
-    
 
     #print out filtered results
     #---------------------------------------------
-    """
-    iter = rw_curs.first()
+    """iter = rw_curs.first()
     while iter:
         result = rw.get(iter[0])
         hi = result.find(tokenized_query['pterm'][1].encode("utf-8"))
