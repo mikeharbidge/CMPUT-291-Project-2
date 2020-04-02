@@ -1,5 +1,5 @@
 CMPUT 291 Mini-Project 2 by Michael Harbidge, Parham Golestaneh, Nicholas Wielgus
-CCIDS: Harbidge, Parhamglst, Wielgus
+CCIDS: Harbidge, sayedpar, Wielgus
 
 No collaboration outside of our group was made.
 
