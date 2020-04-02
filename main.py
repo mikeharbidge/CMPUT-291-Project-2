@@ -1,6 +1,8 @@
 import re
 from datetime import date
+import datetime
 from bsddb3 import db
+import time
 
 COMPARISON_SYMBOLS = {'>', '>=', '<', '<=', '='}
 KEYWORDS = ['pterm', 'rterm', 'price', 'date', 'score']
@@ -50,6 +52,17 @@ def evaluate_query(query):
             date_list[1]), int(date_list[2]))
     return query_dict
 
+def compare (lOperand, rOperand, operator):
+    if operator == '>':
+        return lOperand > rOperand
+    if operator == '<':
+        return lOperand < rOperand
+    if operator == '=':
+        return lOperand == rOperand
+    if operator == '>=':
+        return lOperand >= rOperand
+    if operator == '<=':
+        return lOperand <= rOperand
 
 """
 Runs the query on the database, finds the results and prints them line by line. The output details must be based on full_output.
@@ -93,28 +106,27 @@ def results(tokenized_query, full_output):
     #end of open
     
     #rterm filtering here
-    #--------------------------------------------
+    #---------------------------------------------
+    rt_result_set={None}
+    rt_result_set.clear()
+    rt_iter = rt_curs.first()
     if tokenized_query['rterm']:
-        i = 1
-        while i < len(tokenized_query['rterm']):
-            rt_iter = rt_curs.set_range(tokenized_query['pterm'][i].encode("utf-8"))
-            #print(rt_iter)
-            if rt_iter != None:
-                while rt_iter:
-                    print("------------")
-                    print(rt_iter[0].decode("utf-8"))
-                    print(tokenized_query['rterm'][i])
-                    found = rt_iter[0].decode("utf-8").find(tokenized_query['rterm'][i])
-                    print(found)
-                    if found >= 0:
-                        result = rt.get(rt_iter[0])
-                        print(result)
-                    else:
-                        break
-                    rt_iter = rt_curs.next()
+        prefix = False
+        if tokenized_query['rterm'][1].endswith('%'):
+            prefix = True
+            term = tokenized_query['rterm'][1].replace('%','')
+        while rt_iter:
+            result = rt.get(rt_iter[0])
+            result = result.decode("utf-8")     #instead of encoding the token in the query the result just needs to be decoded
+            print(result)   #debug
+            print(rt_iter[0])
+            if prefix:
+                if rt_iter[0].decode("utf-8").startswith(term): #prints if rterm is in data, fixed
+                    rt_result_set.add(result)
             else:
-                print("FALSE")
-            i = i + 2
+                if (str(tokenized_query['rterm'][1])) == rt_iter[0].decode("utf-8"): #prints if rterm is in data, fixed
+                    rt_result_set.add(result)
+            rt_iter = rt_curs.next()
 
     '''OLD way of rterm filtering that doesnt work
     i = 1
@@ -131,47 +143,82 @@ def results(tokenized_query, full_output):
 
     #pterm filtering here, modified from 
     #---------------------------------------------
-    rt_iter = rt_curs.first()
+    pt_result_set={None}
+    pt_result_set.clear()
+    pt_iter = pt_curs.first()
     if tokenized_query['pterm']:
-        while rt_iter:
-            i = 0       #this needs to be 0 or the while loop will never call
-            result = rt.get(rt_iter[0])
-            result = result.decode("utf-8")#instead of encoding the token in the query the result just needs to be decoded
-            #print(result)   #debug
-            while i <= len(tokenized_query['pterm']):
-                if (str(tokenized_query['pterm'][0][i])) in result: #prints if rterm is in data, fixed
-                    print("Result Found: "+result)
-                i = i + 1
-            rt_iter = rt_curs.next()
+        prefix = False
+        if tokenized_query['pterm'][1].endswith('%'):
+            prefix = True
+            term = tokenized_query['pterm'][1].replace('%','')
+        while pt_iter:
+            result = pt.get(pt_iter[0])
+            result = result.decode("utf-8")     #instead of encoding the token in the query the result just needs to be decoded
+            print(result)   #debug
+            print(pt_iter[0])
+            if prefix:
+                if pt_iter[0].decode("utf-8").startswith(term): #prints if rterm is in data, fixed
+                    pt_result_set.add(result)
+            else:
+                if (str(tokenized_query['pterm'][1])) == pt_iter[0].decode("utf-8"): #prints if rterm is in data, fixed
+                    pt_result_set.add(result)
+            pt_iter = pt_curs.next()
     
     #scores filtering here
     #---------------------------------------------
-    rt_iter = rt_curs.first()
+    sc_result_set={None}
+    sc_result_set.clear()
+    sc_iter = sc_curs.first()
     if tokenized_query['score']:
-        while rt_iter:
-            i = 0       #this needs to be 0 or the while loop will never call
-            result = rt.get(rt_iter[0])
+        while sc_iter:
+            result = sc.get(sc_iter[0])
             result = result.decode("utf-8")     #instead of encoding the token in the query the result just needs to be decoded
-            #print(result)   #debug
-            while i <= len(tokenized_query['score']):
-                if (str(tokenized_query['score'][0][i])) in result: #prints if rterm is in data, fixed
-                    print("Result Found: "+result)
-                i = i + 1
-            rt_iter = rt_curs.next()
+            print(result)   #debug
+            print(sc_iter[0])
+            if len(tokenized_query['score']) == 1:
+                operator1 = tokenized_query['score'][0][0]
+                operand1 = float(tokenized_query['score'][0][1])
+                if compare(float(sc_iter[0].decode("utf-8")), operand1, operator1):
+                    sc_result_set.add(result)
+            elif len(tokenized_query['score']) == 2:
+                operator1 = tokenized_query['score'][0][0]
+                operator2 = tokenized_query['score'][1][0]
+                operand1 = float(tokenized_query['score'][0][1])
+                operand2 = float(tokenized_query['score'][1][1])
+                if compare(float(sc_iter[0].decode("utf-8")), operand1, operator1) and compare(float(sc_iter[0].decode("utf-8")), operand2, operator2):
+                    sc_result_set.add(result)
+            sc_iter = sc_curs.next()
+    
+    combined_set = pt_result_set
+    if len(rt_result_set) != 0:
+        combined_set = combined_set.intersection(rt_result_set)
+    if len(sc_result_set) != 0:
+        combined_set = combined_set.intersection(sc_result_set)
+    result_set = {None}
+    result_set.clear()
     #date filtering here
     #---------------------------------------------
-    rt_iter = rt_curs.first()
-    if tokenized_query['date']:
-        while rt_iter:
-            i = 0       #this needs to be 0 or the while loop will never call
-            result = rt.get(rt_iter[0])
-            result = result.decode("utf-8")     #instead of encoding the token in the query the result just needs to be decoded
-            #print(result)   #debug
-            while i <= len(tokenized_query['date']):
-                if (str(tokenized_query['date'][0][i])) in result: #prints if rterm is in data, fixed
-                    print("Result Found: "+result)
-                i = i + 1
-            rt_iter = rt_curs.next()
+    rw_iter = rw_curs.first()
+    while rw_iter:
+        result = rw.get(rw_iter[0])
+        result = result.decode("utf-8")     #instead of encoding the token in the query the result just needs to be decoded
+        result = result.split(",")
+        print(result)   #debug
+        print(rw_iter[0])
+        if rw_iter[0].decode('utf-8') in combined_set:
+            if len(tokenized_query['date']) == 1:
+                operator1 = tokenized_query['date'][0][0]
+                operand1 = datetime.timestamp(tokenized_query['date'][0][1])
+                if compare(float(result[7]), operand1, operator1):
+                    result_set.add([rw_iter[0].decode('utf-8'), result])
+        elif len(tokenized_query['date']) == 2:
+            operator1 = tokenized_query['date'][0][0]
+            operator2 = tokenized_query['date'][1][0]
+            operand1 = datetime.timesmap(tokenized_query['date'][0][1])
+            operand2 = datetime.timestamp(tokenized_query['date'][1][1])
+            if compare(float(result[7]), operand1, operator1) and compare(float(result[7]), operand2, operator2):
+                result_set.add([rw_iter[0].decode('utf-8'), result])
+        rw_iter = rw_curs.next()
 
     #print out filtered results
     #---------------------------------------------
@@ -196,8 +243,11 @@ def results(tokenized_query, full_output):
     pt.close()
     sc_curs.close()
     sc.close()
+    return result_set
         
 
+        
+    
 
 """
 Prints the summerized version of a result entry (the review id, the product title and the review score of all matching reviews)
@@ -205,19 +255,23 @@ Prints the summerized version of a result entry (the review id, the product titl
 """
 
 
-def show_brief_results(result):
-    result = result.decode("utf-8")
-    pos = result.find(',')
-    print(result[0:pos])
-    pos2 = result.find('"',pos+1)
-    pos = result.find('"', pos2+1)
-    print(result[pos2:pos+1])
-    pos2 = result.find(',',pos+2)
-    pos = result.find(',',pos2+1)
-    pos2 = result.find(',',pos+1)
-    pos = result.find(',',pos2+1)
-    print(result[pos2+1:pos])
-    print()
+def show_brief_results(result_set):
+    review_id = result_set[0]
+    product_id = result_set[1][0]
+    product_title = result_set[1][1]
+    product_price = result_set[1][2]
+    userid = result_set[1][3]
+    profile_name = result_set[1][4]
+    helpfulness = result_set[1][5]
+    score = result_set[1][6]
+    review_date = datetime.fromtimestamp(float(result_set[1][7]))
+    summary = result_set[1][8]
+    review_text = ','.join(result_set[1][9:])
+    print("Review ID:", review_id, 
+          "\nProduct:", product_title,
+          "\nScore:", score)
+                                
+    
 
 
 """
@@ -226,20 +280,37 @@ Prints a result entry with additional details (all review fields)
 """
 
 
-def show_extended_results(result):
-    quotes = 0
-    result = result.decode("utf-8")
-    i=0
-    while i < len(result)-1:
-        if result[i] == '"':
-            quotes = quotes + 1
-        if result[i] != ',':
-            print(result[i], end = '')
-        elif result[i] == ',' and quotes % 2 == 0:
-            print()
-        i = i + 1
-    print()
-    print()
+def show_extended_results(result_set):
+    # quotes = 0
+    # result = result.decode("utf-8")
+    # i=0
+    # while i < len(result)-1:
+    #     if result[i] == '"':
+    #         quotes = quotes + 1
+    #     if result[i] != ',':
+    #         print(result[i], end = '')
+    #     elif result[i] == ',' and quotes % 2 == 0:
+    #         print()
+    #     i = i + 1
+    # print()
+    # print()
+    review_id = result_set[0]
+    product_id = result_set[1][0]
+    product_title = result_set[1][1]
+    product_price = result_set[1][2]
+    userid = result_set[1][3]
+    profile_name = result_set[1][4]
+    helpfulness = result_set[1][5]
+    score = result_set[1][6]
+    review_date = datetime.fromtimestamp(float(result_set[1][7]))
+    summary = result_set[1][8]
+    review_text = ','.join(result_set[1][9:])
+    print("Review ID:", review_id, 
+          "\nProduct ID:", product_id, "\tProduct:", product_title,"\tPrice:",product_price,
+          "\nUser ID:", userid, "\tProfile:", profile_name,
+          "\nHelpfulness:",helpfulness, "\tScore:", score, "\tReview date:", review_date,
+          "\nSummary:", summary,
+          "\n" + review_text)
 
 if __name__ == "__main__":
     running = True
@@ -256,4 +327,7 @@ if __name__ == "__main__":
         else:
             tokenized_query = evaluate_query(command)
             print(tokenized_query)
-            results(tokenized_query, full)
+        if full:
+            show_extended_results(results(tokenized_query, full))
+        else:
+            show_brief_results(results(tokenized_query, full))
